@@ -24,7 +24,13 @@ public class IngestionCacheDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
-        modelBuilder.Entity<IngestedDocument>().HasMany(d => d.Records).WithOne().HasForeignKey(r => r.DocumentId).OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<IngestedDocument>()
+            .HasKey(d => new { d.Id, d.SourceId });
+        modelBuilder.Entity<IngestedDocument>()
+            .HasMany(d => d.Records)
+            .WithOne()
+            .HasForeignKey(r => new { r.DocumentId, r.DocumentSourceId })
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }
 
@@ -41,4 +47,5 @@ public class IngestedRecord
 {
     public required string Id { get; set; }
     public required string DocumentId { get; set; }
+    public required string DocumentSourceId { get; set; }
 }

@@ -49,7 +49,12 @@ public class DataIngestor(
             await foreach (var id in vectorCollection.UpsertBatchAsync(newRecords)) { }
 
             modifiedDoc.Records.Clear();
-            modifiedDoc.Records.AddRange(newRecords.Select(r => new IngestedRecord { Id = r.Key, DocumentId = modifiedDoc.Id }));
+            modifiedDoc.Records.AddRange(newRecords.Select(r => new IngestedRecord 
+            { 
+                Id = r.Key, 
+                DocumentId = modifiedDoc.Id,
+                DocumentSourceId = modifiedDoc.SourceId
+            }));
 
             if (ingestionCacheDb.Entry(modifiedDoc).State == EntityState.Detached)
             {
