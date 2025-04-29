@@ -1,0 +1,46 @@
+[
+  {
+    "timestamp": "2024-03-20T10:00:00Z",
+    "level": "INFO",
+    "message": "Application started successfully",
+    "service": "web-api",
+    "requestId": "req-001"
+  },
+  {
+    "timestamp": "2024-03-20T10:01:15Z",
+    "level": "WARNING",
+    "message": "High CPU usage detected",
+    "service": "web-api",
+    "metrics": {
+      "cpu": "85%",
+      "memory": "60%"
+    }
+  },
+  {
+    "timestamp": "2024-03-20T10:02:30Z",
+    "level": "ERROR",
+    "message": "Database connection timeout",
+    "service": "db-service",
+    "error": {
+      "code": "DB_TIMEOUT",
+      "details": "Connection to primary database failed after 30 seconds"
+    }
+  },
+  {
+    "timestamp": "2024-03-20T10:03:45Z",
+    "level": "INFO",
+    "message": "Database connection restored",
+    "service": "db-service"
+  },
+  {
+    "timestamp": "2024-03-20T10:04:00Z",
+    "level": "INFO",
+    "message": "New user registered",
+    "service": "auth-service",
+    "userId": "user-123",
+    "metadata": {
+      "source": "mobile-app",
+      "region": "EU"
+    }
+  }
+] 
