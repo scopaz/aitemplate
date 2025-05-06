@@ -1,0 +1,364 @@
+@page "/log-analysis"
+@using System.Text.Json
+@using anomalieDetectionLog.Services.Loki
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Forms
+@using Markdig
+@inject LogAnalysisService LogAnalysisService
+@inject LokiClient LokiClient
+
+<PageTitle>Loki Log Analysis</PageTitle>
+
+<div class="container mx-auto p-4">
+    <h1 class="text-3xl font-bold mb-6">Loki Log Analysis</h1>
+    
+    <div class="mb-8 bg-white shadow rounded-lg p-6">
+        <h2 class="text-2xl font-bold mb-4">Query Parameters</h2>
+        
+        <EditForm Model="@_queryParams" OnValidSubmit="HandleSubmit">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label class="block text-gray-700 font-bold mb-2" for="logQuery">
+                        LogQL Query
+                    </label>
+                    <InputTextArea 
+                        id="logQuery" 
+                        class="w-full px-3 py-2 border rounded-md" 
+                        @bind-Value="_queryParams.LogQuery"
+                        rows="3" />
+                    <small class="text-gray-500">Example: {app="anomalie-detection"} | json</small>
+                </div>
+                
+                <div>
+                    <label class="block text-gray-700 font-bold mb-2" for="analysisPrompt">
+                        Analysis Prompt (Optional)
+                    </label>
+                    <InputTextArea 
+                        id="analysisPrompt" 
+                        class="w-full px-3 py-2 border rounded-md" 
+                        @bind-Value="_queryParams.AnalysisPrompt"
+                        rows="3" />
+                    <small class="text-gray-500">Specific instructions for AI analysis</small>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div>
+                    <label class="block text-gray-700 font-bold mb-2" for="startTime">
+                        Start Time
+                    </label>
+                    <InputDate 
+                        id="startTime" 
+                        class="w-full px-3 py-2 border rounded-md" 
+                        @bind-Value="_queryParams.StartDate" />
+                </div>
+                
+                <div>
+                    <label class="block text-gray-700 font-bold mb-2" for="startTimeHours">
+                        Time
+                    </label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <InputSelect 
+                            id="startTimeHours" 
+                            class="px-3 py-2 border rounded-md" 
+                            @bind-Value="_queryParams.StartHour">
+                            @for (int i = 0; i < 24; i++)
+                            {
+                                <option value="@i">@i.ToString("00")</option>
+                            }
+                        </InputSelect>
+                        <InputSelect 
+                            id="startTimeMinutes" 
+                            class="px-3 py-2 border rounded-md" 
+                            @bind-Value="_queryParams.StartMinute">
+                            @for (int i = 0; i < 60; i += 5)
+                            {
+                                <option value="@i">@i.ToString("00")</option>
+                            }
+                        </InputSelect>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-gray-700 font-bold mb-2" for="logLimit">
+                        Log Limit
+                    </label>
+                    <InputNumber 
+                        id="logLimit" 
+                        class="w-full px-3 py-2 border rounded-md" 
+                        @bind-Value="_queryParams.LogLimit" />
+                </div>
+            </div>
+            
+            <div class="flex flex-col md:flex-row gap-4 mb-4">
+                <button 
+                    type="submit" 
+                    class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                    disabled="@_isLoading">
+                    @if (_isLoading)
+                    {
+                        <span class="inline-block mr-2">
+                            <LoadingSpinner Size="small" />
+                        </span>
+                    }
+                    Analyze Logs
+                </button>
+                
+                <button 
+                    type="button" 
+                    class="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+                    disabled="@_isLoading"
+                    @onclick="HandleDetectAnomalies">
+                    @if (_isAnomalyLoading)
+                    {
+                        <span class="inline-block mr-2">
+                            <LoadingSpinner Size="small" />
+                        </span>
+                    }
+                    Detect Anomalies
+                </button>
+                
+                <button 
+                    type="button" 
+                    class="px-6 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
+                    disabled="@_isLoading"
+                    @onclick="HandleSummarizeLogs">
+                    @if (_isSummaryLoading)
+                    {
+                        <span class="inline-block mr-2">
+                            <LoadingSpinner Size="small" />
+                        </span>
+                    }
+                    Summarize Logs
+                </button>
+                
+                <button 
+                    type="button" 
+                    class="px-6 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"
+                    @onclick="HandleLoadLabels"
+                    disabled="@_isLabelsLoading">
+                    @if (_isLabelsLoading)
+                    {
+                        <span class="inline-block mr-2">
+                            <LoadingSpinner Size="small" />
+                        </span>
+                    }
+                    Load Labels
+                </button>
+            </div>
+        </EditForm>
+        
+        @if (_errorMessage != null)
+        {
+            <div class="p-4 bg-red-100 text-red-700 rounded-md mb-4">
+                @_errorMessage
+            </div>
+        }
+    </div>
+    
+    @if (_labels.Any())
+    {
+        <div class="mb-8 bg-white shadow rounded-lg p-6">
+            <h2 class="text-2xl font-bold mb-4">Available Labels</h2>
+            <div class="flex flex-wrap gap-2">
+                @foreach (var label in _labels)
+                {
+                    <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">@label</span>
+                }
+            </div>
+        </div>
+    }
+    
+    @if (_result != null && _result.Success)
+    {
+        <div class="mb-8 bg-white shadow rounded-lg p-6">
+            <h2 class="text-2xl font-bold mb-4">Analysis Results</h2>
+            
+            <div class="mb-4">
+                <strong>Query:</strong> @_result.Query
+            </div>
+            
+            <div class="mb-4">
+                <strong>Time Range:</strong> @_result.TimeRange
+            </div>
+            
+            <div class="mb-4">
+                <strong>Log Sample Count:</strong> @_result.LogSampleCount
+            </div>
+            
+            <div class="border-t pt-4">
+                <div class="prose max-w-none">
+                    @((MarkupString)Markdig.Markdown.ToHtml(_result.Analysis))
+                </div>
+            </div>
+        </div>
+    }
+    else if (_result != null && !_result.Success)
+    {
+        <div class="p-4 bg-red-100 text-red-700 rounded-md mb-4">
+            Analysis failed: @_result.ErrorMessage
+        </div>
+    }
+</div>
+
+@code {
+    private class QueryParameters
+    {
+        public string LogQuery { get; set; } = "{app=\"anomalie-detection\"}";
+        public string AnalysisPrompt { get; set; } = "Analyze these logs and provide insights";
+        public DateTime StartDate { get; set; } = DateTime.Today;
+        public int StartHour { get; set; } = 0;
+        public int StartMinute { get; set; } = 0;
+        public int LogLimit { get; set; } = 100;
+    }
+
+    private QueryParameters _queryParams = new();
+    private LogAnalysisResult? _result;
+    private List<string> _labels = new();
+    private string? _errorMessage;
+    private bool _isLoading;
+    private bool _isAnomalyLoading;
+    private bool _isSummaryLoading;
+    private bool _isLabelsLoading;
+
+    protected override void OnInitialized()
+    {
+        _queryParams.StartDate = DateTime.Now.AddHours(-1);
+        _queryParams.StartHour = DateTime.Now.AddHours(-1).Hour;
+    }
+
+    private async Task HandleSubmit()
+    {
+        try
+        {
+            _isLoading = true;
+            _errorMessage = null;
+
+            var startTime = new DateTimeOffset(
+                _queryParams.StartDate.Year,
+                _queryParams.StartDate.Month,
+                _queryParams.StartDate.Day,
+                _queryParams.StartHour,
+                _queryParams.StartMinute,
+                0,
+                DateTimeOffset.Now.Offset);
+
+            _result = await LogAnalysisService.AnalyzeLogsAsync(
+                _queryParams.LogQuery,
+                _queryParams.AnalysisPrompt,
+                startTime,
+                null,
+                _queryParams.LogLimit
+            );
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Error analyzing logs: {ex.Message}";
+            _result = null;
+        }
+        finally
+        {
+            _isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task HandleDetectAnomalies()
+    {
+        try
+        {
+            _isAnomalyLoading = true;
+            _errorMessage = null;
+
+            var startTime = new DateTimeOffset(
+                _queryParams.StartDate.Year,
+                _queryParams.StartDate.Month,
+                _queryParams.StartDate.Day,
+                _queryParams.StartHour,
+                _queryParams.StartMinute,
+                0,
+                DateTimeOffset.Now.Offset);
+
+            _result = await LogAnalysisService.DetectAnomaliesAsync(
+                _queryParams.LogQuery,
+                startTime,
+                null,
+                _queryParams.LogLimit
+            );
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Error detecting anomalies: {ex.Message}";
+            _result = null;
+        }
+        finally
+        {
+            _isAnomalyLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task HandleSummarizeLogs()
+    {
+        try
+        {
+            _isSummaryLoading = true;
+            _errorMessage = null;
+
+            var startTime = new DateTimeOffset(
+                _queryParams.StartDate.Year,
+                _queryParams.StartDate.Month,
+                _queryParams.StartDate.Day,
+                _queryParams.StartHour,
+                _queryParams.StartMinute,
+                0,
+                DateTimeOffset.Now.Offset);
+
+            _result = await LogAnalysisService.SummarizeLogsAsync(
+                _queryParams.LogQuery,
+                startTime,
+                null,
+                _queryParams.LogLimit
+            );
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Error summarizing logs: {ex.Message}";
+            _result = null;
+        }
+        finally
+        {
+            _isSummaryLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task HandleLoadLabels()
+    {
+        try
+        {
+            _isLabelsLoading = true;
+            _errorMessage = null;
+            
+            var labelsResponse = await LokiClient.GetLabelsAsync();
+            
+            if (labelsResponse.Status == "success")
+            {
+                _labels = labelsResponse.Data;
+            }
+            else
+            {
+                _errorMessage = "Failed to load labels from Loki";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Error loading labels: {ex.Message}";
+        }
+        finally
+        {
+            _isLabelsLoading = false;
+            StateHasChanged();
+        }
+    }
+}

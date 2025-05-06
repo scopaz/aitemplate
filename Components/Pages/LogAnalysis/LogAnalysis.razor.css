@@ -1,0 +1,109 @@
+/* Markdown content styling */
+::deep .prose {
+    font-size: 1rem;
+    line-height: 1.75;
+}
+
+::deep .prose h1 {
+    font-size: 2em;
+    font-weight: 700;
+    margin-top: 1.5em;
+    margin-bottom: 0.5em;
+}
+
+::deep .prose h2 {
+    font-size: 1.5em;
+    font-weight: 700;
+    margin-top: 1.25em;
+    margin-bottom: 0.5em;
+}
+
+::deep .prose h3 {
+    font-size: 1.25em;
+    font-weight: 600;
+    margin-top: 1.25em;
+    margin-bottom: 0.5em;
+}
+
+::deep .prose p {
+    margin-top: 1em;
+    margin-bottom: 1em;
+}
+
+::deep .prose ul {
+    list-style-type: disc;
+    margin-top: 0.5em;
+    margin-bottom: 0.5em;
+    padding-left: 1.5em;
+}
+
+::deep .prose ol {
+    list-style-type: decimal;
+    margin-top: 0.5em;
+    margin-bottom: 0.5em;
+    padding-left: 1.5em;
+}
+
+::deep .prose li {
+    margin-top: 0.25em;
+    margin-bottom: 0.25em;
+}
+
+::deep .prose code {
+    font-family: monospace;
+    background-color: rgba(0, 0, 0, 0.05);
+    padding: 0.1em 0.2em;
+    border-radius: 0.2em;
+}
+
+::deep .prose pre {
+    background-color: rgba(0, 0, 0, 0.05);
+    padding: 1em;
+    border-radius: 0.5em;
+    overflow-x: auto;
+    margin-top: 1em;
+    margin-bottom: 1em;
+}
+
+::deep .prose pre code {
+    background-color: transparent;
+    padding: 0;
+}
+
+::deep .prose table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1em;
+    margin-bottom: 1em;
+}
+
+::deep .prose th {
+    font-weight: 600;
+    padding: 0.5em;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    text-align: left;
+}
+
+::deep .prose td {
+    padding: 0.5em;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+::deep .prose a {
+    color: #2563eb;
+    text-decoration: underline;
+}
+
+::deep .prose blockquote {
+    border-left: 4px solid #e5e7eb;
+    padding-left: 1em;
+    margin-left: 0;
+    margin-right: 0;
+    font-style: italic;
+}
+
+/* Fix for InputDate and InputSelect component styling */
+::deep input[type="date"],
+::deep select {
+    height: 2.5rem;
+}

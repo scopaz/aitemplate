@@ -1,1 +1,16 @@
-<div class="lds-ellipsis"><div></div><div></div><div></div><div></div></div>
+<div class="lds-ellipsis @GetSizeClass()"><div></div><div></div><div></div><div></div></div>
+
+@code {
+    [Parameter]
+    public string Size { get; set; } = "medium";
+
+    private string GetSizeClass()
+    {
+        return Size.ToLower() switch
+        {
+            "small" => "size-small",
+            "large" => "size-large",
+            _ => "size-medium"
+        };
+    }
+}
