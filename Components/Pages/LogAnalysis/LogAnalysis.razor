@@ -4,63 +4,285 @@
 @using Microsoft.AspNetCore.Components
 @using Microsoft.AspNetCore.Components.Forms
 @using Markdig
+@using Microsoft.AspNetCore.Components.Web
 @inject LogAnalysisService LogAnalysisService
 @inject LokiClient LokiClient
 
+<style>
+    /* Page Layout */
+    .page-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 1rem;
+        border: 2px solid green;
+    }
+
+    .page-title {
+        font-size: 1.875rem;
+        font-weight: 700;
+        margin-bottom: 1.5rem;
+    }
+
+    /* Card Styling */
+    .card {
+        margin-bottom: 2rem;
+        background-color: white;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        border-radius: 0.5rem;
+        padding: 1.5rem;
+    }
+
+    .card-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+    }
+
+    /* Form Controls */
+    .form-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .form-grid-three {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .form-label {
+        display: block;
+        color: #4b5563;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 0.5rem 0.75rem;
+        border: 1px solid #d1d5db;
+        border-radius: 0.375rem;
+    }
+
+    .form-select {
+        padding: 0.5rem 0.75rem;
+        border: 1px solid #d1d5db;
+        border-radius: 0.375rem;
+    }
+
+    .help-text {
+        color: #6b7280;
+        font-size: 0.875rem;
+    }
+
+    .time-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+    }
+
+    /* Buttons */
+    .button-group {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .btn {
+        padding: 0.5rem 1.5rem;
+        border: none;
+        border-radius: 0.375rem;
+        font-weight: 500;
+        cursor: pointer;
+    }
+
+    .btn:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+    }
+
+    .btn-primary {
+        background-color: #2563eb;
+        color: white;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+        background-color: #1d4ed8;
+    }
+
+    .btn-success {
+        background-color: #16a34a;
+        color: white;
+    }
+
+    .btn-success:hover:not(:disabled) {
+        background-color: #15803d;
+    }
+
+    .btn-info {
+        background-color: #7e22ce;
+        color: white;
+    }
+
+    .btn-info:hover:not(:disabled) {
+        background-color: #6b21a8;
+    }
+
+    .btn-secondary {
+        background-color: #4b5563;
+        color: white;
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+        background-color: #374151;
+    }
+
+    /* Spinner */
+    .spinner-container {
+        display: inline-block;
+        margin-right: 0.5rem;
+    }
+
+    /* Error Message */
+    .error-message {
+        padding: 1rem;
+        background-color: #fee2e2;
+        color: #b91c1c;
+        border-radius: 0.375rem;
+        margin-bottom: 1rem;
+    }
+
+    /* Labels Section */
+    .labels-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .label {
+        padding: 0.25rem 0.75rem;
+        background-color: #dbeafe;
+        color: #1e40af;
+        border-radius: 9999px;
+        font-size: 0.875rem;
+    }
+
+    /* Analysis Results */
+    .result-item {
+        margin-bottom: 1rem;
+    }
+
+    .analysis-content {
+        border-top: 1px solid #e5e7eb;
+        padding-top: 1rem;
+    }
+
+    /* Prose styling for markdown content */
+    .prose {
+        font-size: 1rem;
+        line-height: 1.75;
+    }
+
+    .prose h1 {
+        font-size: 2em;
+        font-weight: 700;
+        margin-top: 1.5em;
+        margin-bottom: 0.5em;
+    }
+
+    .prose h2 {
+        font-size: 1.5em;
+        font-weight: 700;
+        margin-top: 1.25em;
+        margin-bottom: 0.5em;
+    }
+
+    .prose h3 {
+        font-size: 1.25em;
+        font-weight: 600;
+        margin-top: 1.25em;
+        margin-bottom: 0.5em;
+    }
+
+    .prose p {
+        margin-top: 1em;
+        margin-bottom: 1em;
+    }
+
+    .prose ul {
+        list-style-type: disc;
+        margin-top: 0.5em;
+        margin-bottom: 0.5em;
+        padding-left: 1.5em;
+    }
+
+    .prose ol {
+        list-style-type: decimal;
+        margin-top: 0.5em;
+        margin-bottom: 0.5em;
+        padding-left: 1.5em;
+    }
+
+</style>
+
 <PageTitle>Loki Log Analysis</PageTitle>
 
-<div class="container mx-auto p-4">
-    <h1 class="text-3xl font-bold mb-6">Loki Log Analysis</h1>
+<div class="page-container">
+    <h1 class="page-title">Loki Log Analysis</h1>
     
-    <div class="mb-8 bg-white shadow rounded-lg p-6">
-        <h2 class="text-2xl font-bold mb-4">Query Parameters</h2>
+    <div class="card">
+        <h2 class="card-title">Query Parameters</h2>
         
         <EditForm Model="@_queryParams" OnValidSubmit="HandleSubmit">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div class="form-grid">
                 <div>
-                    <label class="block text-gray-700 font-bold mb-2" for="logQuery">
-                        LogQL Query
+                    <label class="form-label" for="logQuery">
+                        LogQL 
                     </label>
                     <InputTextArea 
                         id="logQuery" 
-                        class="w-full px-3 py-2 border rounded-md" 
+                        class="form-control" 
                         @bind-Value="_queryParams.LogQuery"
                         rows="3" />
-                    <small class="text-gray-500">Example: {app="anomalie-detection"} | json</small>
+                    <small class="help-text">Example: {app="anomalie-detection"} | json</small>
                 </div>
                 
                 <div>
-                    <label class="block text-gray-700 font-bold mb-2" for="analysisPrompt">
+                    <label class="form-label" for="analysisPrompt">
                         Analysis Prompt (Optional)
                     </label>
                     <InputTextArea 
                         id="analysisPrompt" 
-                        class="w-full px-3 py-2 border rounded-md" 
+                        class="form-control" 
                         @bind-Value="_queryParams.AnalysisPrompt"
                         rows="3" />
-                    <small class="text-gray-500">Specific instructions for AI analysis</small>
+                    <small class="help-text">Specific instructions for AI analysis</small>
                 </div>
             </div>
             
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div class="form-grid-three">
                 <div>
-                    <label class="block text-gray-700 font-bold mb-2" for="startTime">
+                    <label class="form-label" for="startTime">
                         Start Time
                     </label>
                     <InputDate 
                         id="startTime" 
-                        class="w-full px-3 py-2 border rounded-md" 
+                        class="form-control" 
                         @bind-Value="_queryParams.StartDate" />
                 </div>
                 
                 <div>
-                    <label class="block text-gray-700 font-bold mb-2" for="startTimeHours">
+                    <label class="form-label" for="startTimeHours">
                         Time
                     </label>
-                    <div class="grid grid-cols-2 gap-2">
+                    <div class="time-grid">
                         <InputSelect 
                             id="startTimeHours" 
-                            class="px-3 py-2 border rounded-md" 
+                            class="form-select" 
                             @bind-Value="_queryParams.StartHour">
                             @for (int i = 0; i < 24; i++)
                             {
@@ -69,7 +291,7 @@
                         </InputSelect>
                         <InputSelect 
                             id="startTimeMinutes" 
-                            class="px-3 py-2 border rounded-md" 
+                            class="form-select" 
                             @bind-Value="_queryParams.StartMinute">
                             @for (int i = 0; i < 60; i += 5)
                             {
@@ -80,24 +302,24 @@
                 </div>
                 
                 <div>
-                    <label class="block text-gray-700 font-bold mb-2" for="logLimit">
+                    <label class="form-label" for="logLimit">
                         Log Limit
                     </label>
                     <InputNumber 
                         id="logLimit" 
-                        class="w-full px-3 py-2 border rounded-md" 
+                        class="form-control" 
                         @bind-Value="_queryParams.LogLimit" />
                 </div>
             </div>
             
-            <div class="flex flex-col md:flex-row gap-4 mb-4">
+            <div class="button-group">
                 <button 
                     type="submit" 
-                    class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                    class="btn btn-primary"
                     disabled="@_isLoading">
                     @if (_isLoading)
                     {
-                        <span class="inline-block mr-2">
+                        <span class="spinner-container">
                             <LoadingSpinner Size="small" />
                         </span>
                     }
@@ -106,12 +328,12 @@
                 
                 <button 
                     type="button" 
-                    class="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+                    class="btn btn-success"
                     disabled="@_isLoading"
                     @onclick="HandleDetectAnomalies">
                     @if (_isAnomalyLoading)
                     {
-                        <span class="inline-block mr-2">
+                        <span class="spinner-container">
                             <LoadingSpinner Size="small" />
                         </span>
                     }
@@ -120,12 +342,12 @@
                 
                 <button 
                     type="button" 
-                    class="px-6 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
+                    class="btn btn-info"
                     disabled="@_isLoading"
                     @onclick="HandleSummarizeLogs">
                     @if (_isSummaryLoading)
                     {
-                        <span class="inline-block mr-2">
+                        <span class="spinner-container">
                             <LoadingSpinner Size="small" />
                         </span>
                     }
@@ -134,12 +356,12 @@
                 
                 <button 
                     type="button" 
-                    class="px-6 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"
+                    class="btn btn-secondary"
                     @onclick="HandleLoadLabels"
                     disabled="@_isLabelsLoading">
                     @if (_isLabelsLoading)
                     {
-                        <span class="inline-block mr-2">
+                        <span class="spinner-container">
                             <LoadingSpinner Size="small" />
                         </span>
                     }
@@ -150,7 +372,7 @@
         
         @if (_errorMessage != null)
         {
-            <div class="p-4 bg-red-100 text-red-700 rounded-md mb-4">
+            <div class="error-message">
                 @_errorMessage
             </div>
         }
@@ -158,12 +380,12 @@
     
     @if (_labels.Any())
     {
-        <div class="mb-8 bg-white shadow rounded-lg p-6">
-            <h2 class="text-2xl font-bold mb-4">Available Labels</h2>
-            <div class="flex flex-wrap gap-2">
+        <div class="card">
+            <h2 class="card-title">Available Labels</h2>
+            <div class="labels-container">
                 @foreach (var label in _labels)
                 {
-                    <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">@label</span>
+                    <span class="label">@label</span>
                 }
             </div>
         </div>
@@ -171,23 +393,23 @@
     
     @if (_result != null && _result.Success)
     {
-        <div class="mb-8 bg-white shadow rounded-lg p-6">
-            <h2 class="text-2xl font-bold mb-4">Analysis Results</h2>
+        <div class="card">
+            <h2 class="card-title">Analysis Results</h2>
             
-            <div class="mb-4">
+            <div class="result-item">
                 <strong>Query:</strong> @_result.Query
             </div>
             
-            <div class="mb-4">
+            <div class="result-item">
                 <strong>Time Range:</strong> @_result.TimeRange
             </div>
             
-            <div class="mb-4">
+            <div class="result-item">
                 <strong>Log Sample Count:</strong> @_result.LogSampleCount
             </div>
             
-            <div class="border-t pt-4">
-                <div class="prose max-w-none">
+            <div class="analysis-content">
+                <div class="prose">
                     @((MarkupString)Markdig.Markdown.ToHtml(_result.Analysis))
                 </div>
             </div>
@@ -195,7 +417,7 @@
     }
     else if (_result != null && !_result.Success)
     {
-        <div class="p-4 bg-red-100 text-red-700 rounded-md mb-4">
+        <div class="error-message">
             Analysis failed: @_result.ErrorMessage
         </div>
     }
@@ -223,6 +445,15 @@
 
     protected override void OnInitialized()
     {
+        var startTime = new DateTimeOffset(
+            _queryParams.StartDate.Year,
+            _queryParams.StartDate.Month,
+            _queryParams.StartDate.Day,
+            _queryParams.StartHour,
+            _queryParams.StartMinute,
+            0,
+            DateTimeOffset.Now.Offset);
+
         _queryParams.StartDate = DateTime.Now.AddHours(-1);
         _queryParams.StartHour = DateTime.Now.AddHours(-1).Hour;
     }
@@ -339,9 +570,9 @@
         {
             _isLabelsLoading = true;
             _errorMessage = null;
-            
+
             var labelsResponse = await LokiClient.GetLabelsAsync();
-            
+
             if (labelsResponse.Status == "success")
             {
                 _labels = labelsResponse.Data;
